@@ -149,18 +149,22 @@ class SenseHat(object):
 
         home_dir = pwd.getpwuid(os.getuid())[5]
         home_path = os.path.join(home_dir, self.SETTINGS_HOME_PATH)
-        if not os.path.exists(home_path):
-            os.makedirs(home_path)
 
-        home_file = os.path.join(home_path, ini_file)
-        home_exists = os.path.isfile(home_file)
-        system_file = os.path.join('/etc', ini_file)
-        system_exists = os.path.isfile(system_file)
+        #In some cases, access to root directory is not available. Changed this section to use system file          
+        if os.access(home_dir, os.W_OK):
+            if not os.path.exists(home_path):
+                os.makedirs(home_path)            
+            home_file = os.path.join(home_path, ini_file)
+            home_exists = os.path.isfile(home_file)
+            system_file = os.path.join('/etc', ini_file)
+            system_exists = os.path.isfile(system_file)
+    
+            if system_exists and not home_exists:
+                shutil.copyfile(system_file, home_file)
 
-        if system_exists and not home_exists:
-            shutil.copyfile(system_file, home_file)
-
-        return RTIMU.Settings(os.path.join(home_path, imu_settings_file))  # RTIMU will add .ini internally
+            return RTIMU.Settings(os.path.join(home_path, imu_settings_file))  # RTIMU will add .ini internally
+        else:
+            return RTIMU.Settings(os.path.join('/etc', imu_settings_file))  # RTIMU will add .ini internally            
 
     def _get_fb_device(self):
         """
